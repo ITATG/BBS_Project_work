@@ -1,10 +1,13 @@
 from sqlalchemy import URL, create_engine
 import pandas as pd
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 server = "crm-data.database.windows.net"
-database = "rawdata-test"
-username = "INSERT USERNAME HERE"
-password = "INSERT PASSWORD HERE"
+database = os.getenv("DB_NAME")
+username = os.getenv("DB_USER")
+password = os.getenv("DB_PASSWORD")
 
 connection_url = URL.create(
     "mssql+pymssql",
@@ -18,6 +21,7 @@ engine = create_engine(connection_url)
 
 with engine.connect() as conn:
     print("Connection OK")
+
 
 config = {
 
