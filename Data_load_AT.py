@@ -49,20 +49,20 @@ config = {
    #    }
    #},
 
-     "SCI": {
-         "table": "SCI",
-         "mapping": {
-             "Cd Service Confirmation Num": "ServiceConfirmationHeader",
-             "Cd Service Confirmation Item": "ServiceConfirmationItem",
-             "Cd Item Type": "ItemTypeCode",
-             "Cd Product Id": "ProductCode",
-             "Cd Status Item": "StatusCode",
-             "Position creaed at (timestamp)": "CreationTimestamp",
-             "Dt Start Work Date and Time": "StartWork",
-             "Dt End Work Date and Time": "EndWork",
-             "Qt Act Duration": "ActualDuration"
-         }
-     },
+    #    "SCI": {
+    #     "table": "SCI",
+    #     "mapping": {
+    #         "Cd Service Confirmation Num": "ServiceConfirmationHeader",
+    #         "Cd Service Confirmation Item": "ServiceConfirmationItem",
+    #         "Cd Item Type": "ItemTypeCode",
+    #         "Cd Product Id": "ProductCode",
+    #         "Cd Status Item": "StatusCode",
+    #         "Position creaed at (timestamp)": "CreationTimestamp",
+    #         "Dt Start Work Date and Time": "StartWork",
+    #         "Dt End Work Date and Time": "EndWork",
+    #         "Qt Act Duration": "ActualDuration"
+    #     }
+    # },
 
 	
     #"EQ": {
