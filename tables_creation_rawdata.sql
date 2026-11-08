@@ -15,7 +15,7 @@ CREATE TABLE SCH
     ProductFamilyDescription VARCHAR(50),
     SkillProfileCode VARCHAR(10),
     EquipmentAge INT,
-    LastMaintenanceDate DATE,
+--    LastMaintenanceDate DATE,
 
     CONSTRAINT PK_SCH
         PRIMARY KEY (ServiceConfirmationHeader)
@@ -38,6 +38,7 @@ CREATE TABLE SCI
     ServiceConfirmationHeader VARCHAR(50) NOT NULL,
     ServiceConfirmationItem   VARCHAR(50) NOT NULL,
     ItemTypeCode              VARCHAR(10),
+    ProductCode               VARCHAR(50)
     StatusCode                VARCHAR(10),
     CreationTimestamp         DATETIME2,
     StartWork                 DATETIME2,
@@ -63,10 +64,10 @@ CREATE TABLE EQUIPMENT
     InstallerCode      VARCHAR(20),
     ManufacturerCode   VARCHAR(10),
     PowerCode          VARCHAR(20),
-    FeukoLastYear      INT,
+--    FeukoLastYear      INT,
     WarrantyEndDate    DATE,
     StartUpDate        DATE,
-    WarrantyStartDate  DATE,
+--    WarrantyStartDate  DATE,
 
     CONSTRAINT PK_EQUIPMENT
         PRIMARY KEY (EquipmentCode)
@@ -76,7 +77,6 @@ CREATE TABLE EQUIPMENT
     --    REFERENCES PRODUCT(ProductCode)
 );
 
-			Cd Skill Profile	Cd Warengroup	Ds Material
 
 CREATE TABLE PRODUCT
 (
