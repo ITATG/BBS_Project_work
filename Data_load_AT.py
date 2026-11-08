@@ -1,0 +1,241 @@
+from sqlalchemy import URL, create_engine
+import pandas as pd
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# parameters for connection to the DB
+server = "crm-data.database.windows.net"
+database = os.getenv("DB_NAME")
+username = os.getenv("DB_USER")
+password = os.getenv("DB_PASSWORD")
+
+# create connection URL and engine
+connection_url = URL.create(
+    "mssql+pymssql",
+    username=username,
+    password=password,
+    host=server,
+    database=database
+)
+
+engine = create_engine(connection_url)
+
+with engine.connect() as conn:
+    print("Connection OK")
+
+
+config = {
+
+   #"SCH": {
+   #    "table": "SCH",
+   #    "mapping": {
+   #        "Ote Service Confirm Header.Cd Service Confirmation Num": "ServiceConfirmationHeader",
+   #        "Cd Equipment" : "EquipmentCode",
+   #        "Cd Exc Service Employee": "ServiceTechnicianCode",
+   #        "Cd Material": "MaterialCode",
+   #        "Ds Material" : "MaterialDescription",
+   #        "Cd Status Header": "HeaderStatusCode",
+   #        "Ote Service Confirm Header.Dt Creation Date Timestamp": "CreationTimestamp",
+   #        "Cd Energy Type": "EnergyTypeCode",
+   #        "Cd Category": "CategoryCode",
+   #        "Cd Product Family": "ProductTypeCode",
+   #        "Cd Product Type 1": "ProductType1",
+   #        "Cd Product Type 2": "ProductType2",
+   #        "Ds Product Family": "ProductFamilyDescription",
+   #        "Cd Skill Profile": "SkillProfileCode",
+   #        "EQ_Age": "EquipmentAge",
+   #        # "Last maintenance date": "LastMaintenanceDate",
+   #    }
+   #},
+
+     "SCI": {
+         "table": "SCI",
+         "mapping": {
+             "Cd Service Confirmation Num": "ServiceConfirmationHeader",
+             "Cd Service Confirmation Item": "ServiceConfirmationItem",
+             "Cd Item Type": "ItemTypeCode",
+             "Cd Product Id": "ProductCode",
+             "Cd Status Item": "StatusCode",
+             "Position creaed at (timestamp)": "CreationTimestamp",
+             "Dt Start Work Date and Time": "StartWork",
+             "Dt End Work Date and Time": "EndWork",
+             "Qt Act Duration": "ActualDuration"
+         }
+     },
+
+	
+    #"EQ": {
+    #    "table": "EQUIPMENT",
+    #    "mapping": {
+    #        "Cd Equipment": "EquipmentCode",
+    #        "Cd Product": "ProductCode",
+    #        "Cd Constr Year": "ConstructionYear",
+    #        "Cd Eq Installer": "InstallerCode",
+    #        "Cd Eq Manufacturer": "ManufacturerCode",
+    #        "Cd Eq Power": "PowerCode",
+    #         #"Cd Feuko Last Year": "FeukoLastYear",
+    #        "Dt End Warranty": "WarrantyEndDate",
+    #        "Dt Start Up": "StartUpDate",
+    #         #"Dt Start Warranty": "WarrantyStartDate",
+    #    }
+    #},
+
+	#    "PROD": {
+    #    "table": "PRODUCT",
+    #    "mapping": {
+    #        "Cd Material": "MaterialCode",
+    #        "Cd Energy Type": "EnergyTypeCode",
+    #        "Cd Product Family": "ProductFamilyCode",
+    #        "Cd Product Type 2": "ProductTypeCode",
+    #        "Cd Skill Profile": "SkillProfileCode",
+    #        "Cd Warengroup": "WarengroupCode",
+    #        "Ds Material": "MaterialDescription",
+    #        "Nr Power Max Kw": "PowerMaxKW",
+    #        "Nr Power Max Lt": "PowerMinKW",
+    #        "Nr Power Min Kw": "PowerMaxLT",
+    #        "Nr Refrigerant Fluid": "RefrigerantFluid",
+    #    }
+    #},
+
+    # "Skills": {
+    #        "table": "SKILLS",
+    #        "mapping": {
+    #           "resourceId": "ResourceId",
+    #            "parentResourceId": "TeamCode",
+    #            "workSkill": "SkillCode"
+    #        }
+    #    }
+}
+import os
+
+
+base_path = r"C:\Users\bordo\OneDrive - Bologna Business School\Documenti\Project Work\AT"
+
+
+
+for sheet_name, cfg in config.items():
+
+    print(f"Elaborating {sheet_name}")
+
+    csv_file = os.path.join(base_path, f"{sheet_name}.csv")
+
+    df = pd.read_csv(
+        csv_file,
+        usecols=list(cfg["mapping"].keys())
+    )
+
+    # Specific trasformation. Remove ZP from Cd Exc Service Employee in SCH sheet
+    if sheet_name == "SCH":
+        df["Cd Exc Service Employee"] = (
+            df["Cd Exc Service Employee"]
+            .astype(str)
+            .str.removeprefix("ZP")
+        )
+
+    # Rename columns CSV -> SQL
+    df = df.rename(columns=cfg["mapping"])
+
+    # convert columns to datetime and numeric types 
+    if sheet_name == "SCH":
+        df["CreationTimestamp"] = pd.to_datetime(
+            df["CreationTimestamp"],
+            dayfirst=True,
+            errors="coerce"
+        )
+        before = len(df)
+        # drop duplicates based on ServiceConfirmationHeader
+        df = df.drop_duplicates(subset=["ServiceConfirmationHeader"])
+        print(f"Eliminate {before - len(df)} duplicate rows")
+
+    elif sheet_name == "SCI":
+    # convert columns to datetime and numeric types
+        df["CreationTimestamp"] = pd.to_datetime(
+            df["CreationTimestamp"].astype(str),
+            format="%Y%m%d%H%M%S",
+            errors="coerce"
+        )
+        # remove duplicates based on ServiceConfirmationHeader and ServiceConfirmationItem
+        before = len(df)
+        df = df.drop_duplicates(
+            subset=["ServiceConfirmationHeader", "ServiceConfirmationItem"]
+        )
+
+        print(f"Removed {before - len(df)} duplicate rows")
+        for col in ["StartWork", "EndWork"]:
+            if col in df.columns:
+                df[col] = pd.to_datetime(
+                    df[col],
+                    dayfirst=True,
+                    errors="coerce"
+                )
+    # convert string to int for ActualDuration, fill NaN with 0
+        df["ActualDuration"] = (
+            pd.to_numeric(
+                df["ActualDuration"],
+                errors="coerce"
+            )
+            .fillna(0)
+            .astype(int)
+        )
+
+    elif sheet_name == "EQ":
+        for col in ["WarrantyEndDate", "StartUpDate"]:
+            if col in df.columns:
+                df[col] = pd.to_datetime(
+                    df[col],
+                    dayfirst=True,
+                    errors="coerce"
+                )
+        df["filled"] = df.notna().sum(axis=1)
+        df = (
+            df.sort_values("filled")
+            .drop_duplicates(
+                subset=["EquipmentCode"],
+                keep="last"
+            )
+            .drop(columns="filled")
+        )
+
+    elif sheet_name == "PROD":
+        for col in ["PowerMaxKW", "PowerMinKW", "PowerMaxLT"]:
+            df[col] = (
+                pd.to_numeric(df[col], errors="coerce")
+                .fillna(0)
+                .astype(int)
+            )
+        df["MaterialCode"] = df["MaterialCode"].astype(str).str.strip()
+
+        df = df[
+            df["MaterialCode"].notna()
+        ]
+
+        df = df[
+            (df["MaterialCode"] != "")
+            & (df["MaterialCode"] != "nan")
+        ]
+    if "ServiceConfirmationHeader" in df.columns:
+        df["ServiceConfirmationHeader"] = df["ServiceConfirmationHeader"].astype(str)
+    if "ServiceConfirmationItem" in df.columns:
+        df["ServiceConfirmationItem"] = df["ServiceConfirmationItem"].astype(str)
+
+
+    # Remove empty rows
+    df = df.dropna(how="all")
+
+    # load on SQL
+    
+    print(f"Loading table {cfg['table']}")
+    print(df.shape)
+
+    df.to_sql(
+        name=cfg["table"],
+        con=engine,
+        if_exists="append",
+        index=False,
+        chunksize=1000
+    )
+	
+    print(f"{len(df)} record loaded into table {cfg['table']}")
+
+
